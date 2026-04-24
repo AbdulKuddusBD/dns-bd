@@ -1,0 +1,12 @@
+# =============================================================================
+# Custom Blocklist
+# =============================================================================
+# Add your own domains to block here, one per line.
+# Lines starting with # are comments.
+#
+# Examples:
+# example-ad-domain.com
+# tracking.example.com
+# =============================================================================
+
+# Add your custom blocked domains below:

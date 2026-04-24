@@ -1,0 +1,59 @@
+version: "3.8"
+
+services:
+  # =========================================================================
+  # CoreDNS - Main DNS Server (DoT + DoH + DNS)
+  # =========================================================================
+  coredns:
+    image: coredns/coredns:1.11.1
+    container_name: dns-server
+    restart: always
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "853:853/tcp"    # DNS over TLS (Private DNS)
+      - "443:443/tcp"    # DNS over HTTPS
+    volumes:
+      - ./Corefile:/etc/coredns/Corefile:ro
+      - ./blocklists/blocklist.hosts:/etc/coredns/blocklist.hosts:ro
+      - ./certs:/etc/coredns/certs:ro
+    command: -conf /etc/coredns/Corefile
+    networks:
+      - dns-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # =========================================================================
+  # Certbot - Automatic TLS Certificate Management (Let's Encrypt)
+  # =========================================================================
+  certbot:
+    image: certbot/certbot:latest
+    container_name: dns-certbot
+    volumes:
+      - ./certs:/etc/letsencrypt
+      - ./certbot-webroot:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do sleep 12h & wait $${!}; certbot renew --quiet; done'"
+    networks:
+      - dns-net
+
+  # =========================================================================
+  # Blocklist Updater - Periodic blocklist refresh (every 6 hours)
+  # =========================================================================
+  blocklist-updater:
+    image: alpine:3.19
+    container_name: dns-blocklist-updater
+    restart: always
+    volumes:
+      - ./scripts:/scripts:ro
+      - ./blocklists:/blocklists
+      - ./config:/config:ro
+    entrypoint: "/bin/sh -c 'apk add --no-cache bash curl && /scripts/update-blocklists.sh && while true; do sleep 21600; /scripts/update-blocklists.sh; done'"
+    networks:
+      - dns-net
+
+networks:
+  dns-net:
+    driver: bridge

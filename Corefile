@@ -1,0 +1,66 @@
+# =============================================================================
+# CoreDNS Configuration - KahfGuard-style DNS Server
+# =============================================================================
+# This configuration provides:
+#   - DNS over TLS (DoT) on port 853 for Android/iOS Private DNS
+#   - DNS over HTTPS (DoH) on port 443
+#   - Standard DNS on port 53 (optional, for local network)
+#   - Blocklist-based filtering (ads, adult, malware, tracking)
+# =============================================================================
+
+# --- DNS over TLS (DoT) - Port 853 ---
+# This is what Android "Private DNS" and iOS use
+tls://.:853 {
+    tls /etc/coredns/certs/fullchain.pem /etc/coredns/certs/privkey.pem
+
+    # Load blocklist (blocked domains resolve to 0.0.0.0)
+    hosts /etc/coredns/blocklist.hosts {
+        fallthrough
+    }
+
+    # Forward unblocked queries to upstream DNS
+    forward . tls://8.8.8.8 tls://8.8.4.4 {
+        tls_servername dns.google
+        health_check 30s
+    }
+
+    # Cache responses (1 hour)
+    cache 3600
+
+    # Logging
+    log
+    errors
+}
+
+# --- DNS over HTTPS (DoH) - Port 443 ---
+https://.:443 {
+    tls /etc/coredns/certs/fullchain.pem /etc/coredns/certs/privkey.pem
+
+    hosts /etc/coredns/blocklist.hosts {
+        fallthrough
+    }
+
+    forward . tls://8.8.8.8 tls://8.8.4.4 {
+        tls_servername dns.google
+        health_check 30s
+    }
+
+    cache 3600
+    log
+    errors
+}
+
+# --- Standard DNS - Port 53 (for local network / fallback) ---
+.:53 {
+    hosts /etc/coredns/blocklist.hosts {
+        fallthrough
+    }
+
+    forward . 8.8.8.8 8.8.4.4 {
+        health_check 30s
+    }
+
+    cache 3600
+    log
+    errors
+}
