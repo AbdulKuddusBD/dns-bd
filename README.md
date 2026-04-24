@@ -56,7 +56,7 @@ A self-hosted **DNS over TLS (DoT)** and **DNS over HTTPS (DoH)** server with bu
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/dns-server.git
+git clone https://github.com/AbdulKuddusBD/dns-bd.git
 cd dns-server
 ```
 
